@@ -28,8 +28,6 @@ class Glow(nn.Module):
                            mid_channels=num_channels,
                            num_levels=num_levels,
                            num_steps=num_steps)
-        self.best_loss = 0
-        self.iter_step = 0
 
     def forward(self, x, reverse=False):
         if reverse:
