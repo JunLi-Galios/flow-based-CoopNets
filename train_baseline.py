@@ -79,7 +79,7 @@ def main(args):
 
 
 @torch.enable_grad()
-def train(epoch, net, trainloader, device, optimizer, scheduler, loss_fn, max_grad_norm):
+def train_full(epoch, net, trainloader, device, optimizer, scheduler, loss_fn, max_grad_norm):
     global global_step
     print('\nEpoch: %d' % epoch)
     net.train()
@@ -102,6 +102,25 @@ def train(epoch, net, trainloader, device, optimizer, scheduler, loss_fn, max_gr
                                      lr=optimizer.param_groups[0]['lr'])
             progress_bar.update(x.size(0))
             global_step += x.size(0)
+            
+@torch.enable_grad()
+def train_single_step(net, x, device, optimizer, scheduler, loss_fn, max_grad_norm):
+    global global_step
+    print('\nEpoch: %d' % epoch)
+    net.train()
+    loss_meter = util.AverageMeter()
+    x = x.to(device)
+    optimizer.zero_grad()
+    z, sldj = net(x, reverse=False)
+    loss = loss_fn(z, sldj)
+    loss_meter.update(loss.item(), x.size(0))
+    loss.backward()
+    if max_grad_norm > 0:
+        util.clip_grad_norm(optimizer, max_grad_norm)
+    optimizer.step()
+    scheduler.step(global_step)
+    
+    global_step += x.size(0)
 
 
 @torch.no_grad()
