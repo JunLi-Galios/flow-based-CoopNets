@@ -47,10 +47,10 @@ def main(args):
 
     # Model
     print('Building model..')
-    net = Glow(num_channels=args.num_channels,
+    flow = Glow(num_channels=args.num_channels,
                num_levels=args.num_levels,
                num_steps=args.num_steps)
-    net = net.to(device)
+    flow = flow.to(device)
     if device == 'cuda':
         net = torch.nn.DataParallel(net, args.gpu_ids)
         cudnn.benchmark = args.benchmark
@@ -79,7 +79,7 @@ def main(args):
 
 
 @torch.enable_grad()
-def train_full(epoch, net, trainloader, device, optimizer, scheduler, loss_fn, max_grad_norm):
+def train_flow_full(epoch, net, trainloader, device, optimizer, scheduler, loss_fn, max_grad_norm):
     global global_step
     print('\nEpoch: %d' % epoch)
     net.train()
@@ -104,11 +104,8 @@ def train_full(epoch, net, trainloader, device, optimizer, scheduler, loss_fn, m
             global_step += x.size(0)
             
 @torch.enable_grad()
-def train_single_step(net, x, device, optimizer, scheduler, loss_fn, max_grad_norm):
-    global global_step
-    print('\nEpoch: %d' % epoch)
+def train_flow_single_step(net, x, device, optimizer, loss_fn, max_grad_norm):
     net.train()
-    loss_meter = util.AverageMeter()
     x = x.to(device)
     optimizer.zero_grad()
     z, sldj = net(x, reverse=False)
@@ -118,9 +115,7 @@ def train_single_step(net, x, device, optimizer, scheduler, loss_fn, max_grad_no
     if max_grad_norm > 0:
         util.clip_grad_norm(optimizer, max_grad_norm)
     optimizer.step()
-    scheduler.step(global_step)
     
-    global_step += x.size(0)
 
 
 @torch.no_grad()
