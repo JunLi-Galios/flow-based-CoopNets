@@ -31,7 +31,7 @@ def build_flow(args):
     best_loss = 0
     global_step = 0
     
-    if args.resume:
+    if args.resume_flow:
         # Load checkpoint.
         print('Resuming from checkpoint at ckpts/best.pth.tar...')
         assert os.path.isdir('ckpts'), 'Error: no checkpoint directory found!'
