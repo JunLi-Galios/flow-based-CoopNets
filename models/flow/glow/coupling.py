@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from models.glow.act_norm import ActNorm
+from models.flow.glow.act_norm import ActNorm
 
 
 class Coupling(nn.Module):
