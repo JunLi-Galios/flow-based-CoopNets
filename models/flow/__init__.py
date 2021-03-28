@@ -1,1 +1,1 @@
-from models.glow import Glow
+from models.flow.glow.glow import Glow
