@@ -16,7 +16,7 @@ import util
 
 import models.flow as flow
 
-def build_flow(args):
+def build_flow(args, device):
     # Model
     print('Building flow model..')
     flow_net = flow.Glow(num_channels=args.num_channels,
@@ -79,7 +79,7 @@ def main(args):
     testloader = data.DataLoader(testset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
     
     if args.mode == 'flow':
-        flow_net, loss_fn, optimizer, scheduler, start_epoch, best_loss, global_step = build_flow(args)
+        flow_net, loss_fn, optimizer, scheduler, start_epoch, best_loss, global_step = build_flow(args, deivce)
         for epoch in range(start_epoch, start_epoch + args.num_epochs):
             flow.train(epoch, flow_net, trainloader, device, optimizer, scheduler,
                   loss_fn, args.max_grad_norm)
