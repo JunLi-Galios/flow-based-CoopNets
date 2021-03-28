@@ -81,7 +81,7 @@ def main(args):
     if args.mode == 'flow':
         flow_net, loss_fn, optimizer, scheduler, start_epoch, best_loss, global_step = build_flow(args, device)
         for epoch in range(start_epoch, start_epoch + args.num_epochs):
-            flow.train(epoch, flow_net, trainloader, device, optimizer, scheduler,
+            flow.train_full(epoch, flow_net, trainloader, device, optimizer, scheduler,
                   loss_fn, args.max_grad_norm)
             flow.test(epoch, flow_net, testloader, device, loss_fn, args.num_samples)
 
