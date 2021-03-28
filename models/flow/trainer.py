@@ -6,7 +6,7 @@ import os
 import torchvision
 
 @torch.enable_grad()
-def train_full(epoch, net, trainloader, device, optimizer, scheduler, loss_fn, max_grad_norm, global_step):
+def train_full(epoch, net, trainloader, device, optimizer, scheduler, loss_fn, max_grad_norm):
     print('\nEpoch: %d' % epoch)
     net.train()
     loss_meter = util.AverageMeter()
@@ -27,7 +27,6 @@ def train_full(epoch, net, trainloader, device, optimizer, scheduler, loss_fn, m
                                      bpd=util.bits_per_dim(x, loss_meter.avg),
                                      lr=optimizer.param_groups[0]['lr'])
             progress_bar.update(x.size(0))
-            global_step += x.size(0)
             
 @torch.enable_grad()
 def train_single_step(net, x, device, optimizer, loss_fn, max_grad_norm):
@@ -66,7 +65,7 @@ def test(epoch, net, testloader, device, loss_fn, num_samples, best_loss):
             'epoch': epoch,
         }
         os.makedirs('ckpts', exist_ok=True)
-        torch.save(state, 'ckpts/best.pth.tar')
+        torch.save(state, 'ckpts/flow_best.pth.tar')
         best_loss = loss_meter.avg
 
     # Save samples and data
