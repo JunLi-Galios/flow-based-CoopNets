@@ -79,7 +79,7 @@ def main(args):
     testloader = data.DataLoader(testset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
     
     if args.mode == 'flow':
-        flow_net, loss_fn, optimizer, scheduler, start_epoch, best_loss, global_step = build_flow(args, deivce)
+        flow_net, loss_fn, optimizer, scheduler, start_epoch, best_loss, global_step = build_flow(args, device)
         for epoch in range(start_epoch, start_epoch + args.num_epochs):
             flow.train(epoch, flow_net, trainloader, device, optimizer, scheduler,
                   loss_fn, args.max_grad_norm)
