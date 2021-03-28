@@ -18,7 +18,7 @@ def train_full(epoch, net, trainloader, device, optimizer, scheduler, loss_fn, m
             if max_grad_norm > 0:
                 util.clip_grad_norm(optimizer, max_grad_norm)
             optimizer.step()
-            scheduler.step(global_step)
+            scheduler.step()
 
             progress_bar.set_postfix(nll=loss_meter.avg,
                                      bpd=util.bits_per_dim(x, loss_meter.avg),
