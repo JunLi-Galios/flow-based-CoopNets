@@ -14,7 +14,7 @@ def train_full(epoch, net, trainloader, device, optimizer, scheduler):
             x = x.to(device)
             optimizer.zero_grad()
             x_q = sample(net, m=64, n_ch=3, im_sz=32, im_sz=32, K=100, device)
-            loss = f(x_q).mean() - f(x_p_d).mean()
+            loss = net(x_q).mean() - net(x_p_d).mean()
             loss_meter.update(loss.item(), x.size(0))
             loss.backward()
  
@@ -33,7 +33,7 @@ def train_single_step(net, x, device, optimizer):
     x = x.to(device)
     optimizer.zero_grad()
     x_q = sample(net, m=64, n_ch=3, im_sz=32, im_sz=32, K=100, device)
-    loss = f(x_q).mean() - f(x_p_d).mean()
+    loss = net(x_q).mean() - net(x_p_d).mean()
     loss_meter.update(loss.item(), x.size(0))
     loss.backward()
     optimizer.step()
@@ -45,8 +45,8 @@ def test(epoch, net, testloader, device, loss_fn, num_samples, best_loss):
     with tqdm(total=len(testloader.dataset)) as progress_bar:
         for x, _ in testloader:
             x = x.to(device)
-            z, sldj = net(x, reverse=False)
-            loss = loss_fn(z, sldj)
+            x_q = sample(net, m=64, n_ch=3, im_sz=32, im_sz=32, K=100, device)
+            loss = net(x_q).mean() - net(x_p_d).mean()
             loss_meter.update(loss.item(), x.size(0))
             progress_bar.set_postfix(nll=loss_meter.avg,
                                      bpd=util.bits_per_dim(x, loss_meter.avg))
@@ -68,6 +68,6 @@ def test(epoch, net, testloader, device, loss_fn, num_samples, best_loss):
     images = sample(net, m=64, n_ch=3, im_sz=32, im_sz=32, K=100, device)
     os.makedirs('ebm_samples', exist_ok=True)
     images_concat = torchvision.utils.make_grid(images, nrow=int(num_samples ** 0.5), padding=2, pad_value=255)
-    torchvision.utils.save_image(images_concat, 'samples/epoch_{}.png'.format(epoch))
+    torchvision.utils.save_image(images_concat, 'ebm_samples/epoch_{}.png'.format(epoch))
     
     return best_loss
