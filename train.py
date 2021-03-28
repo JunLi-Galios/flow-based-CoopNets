@@ -14,12 +14,12 @@ import torchvision
 import torchvision.transforms as transforms
 import util
 
-from models.flow import Glow
+import models.flow as flow
 
 def build_flow(args):
     # Model
     print('Building flow model..')
-    flow = Glow(num_channels=args.num_channels,
+    flow = flow.Glow(num_channels=args.num_channels,
                num_levels=args.num_levels,
                num_steps=args.num_steps)
     flow = flow.to(device)
