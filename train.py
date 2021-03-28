@@ -28,8 +28,7 @@ def build_flow(args, device):
         cudnn.benchmark = args.benchmark
 
     start_epoch = 0
-    best_loss = 0
-    global_step = 0
+    flow_best_loss = 0
     
     if args.resume_flow:
         # Load checkpoint.
@@ -37,18 +36,42 @@ def build_flow(args, device):
         assert os.path.isdir('ckpts'), 'Error: no checkpoint directory found!'
         checkpoint = torch.load('ckpts/best.pth.tar')
         flow_net.load_state_dict(checkpoint['net'])
-        best_loss = checkpoint['test_loss']
+        flow_best_loss = checkpoint['test_loss']
         start_epoch = checkpoint['epoch']
-        global_step = start_epoch * len(trainset)
 
     loss_fn = util.NLLLoss().to(device)
     optimizer = optim.Adam(flow_net.parameters(), lr=args.lr)
     scheduler = sched.LambdaLR(optimizer, lambda s: min(1., s / args.warm_up))
     
-    return flow_net, loss_fn, optimizer, scheduler, start_epoch, best_loss, global_step
+    return flow_net, loss_fn, optimizer, scheduler, start_epoch, flow_best_loss
 
 def build_ebm(args):
-    pass
+    
+    print('Building ebm model..')
+    ebm_net = ebm.Glow(num_channels=args.num_channels,
+               num_levels=args.num_levels,
+               num_steps=args.num_steps)
+    ebm_net = ebm_net.to(device)
+    if device == 'cuda':
+        ebm_net = torch.nn.DataParallel(ebm_net, args.gpu_ids)
+        cudnn.benchmark = args.benchmark
+
+    start_epoch = 0
+    ebm_best_loss = 0
+    
+    if args.resume_ebm:
+        # Load checkpoint.
+        print('Resuming from checkpoint at ckpts/ebm_best.pth.tar...')
+        assert os.path.isdir('ckpts'), 'Error: no checkpoint directory found!'
+        checkpoint = torch.load('ckpts/ebm_best.pth.tar')
+        ebm_net.load_state_dict(checkpoint['net'])
+        ebm_best_loss = checkpoint['test_loss']
+        start_epoch = checkpoint['epoch']
+        
+    optimizer = t.optim.Adam(f.parameters(), lr=1e-4, betas=[.9, .999])    
+    scheduler = None
+        
+    return ebm_net, optimizer, scheduler, start_epoch, ebm_best_loss
 
 
 def main(args):
@@ -79,14 +102,17 @@ def main(args):
     testloader = data.DataLoader(testset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
     
     if args.mode == 'flow':
-        flow_net, loss_fn, optimizer, scheduler, start_epoch, best_loss, global_step = build_flow(args, device)
+        flow_net, loss_fn, optimizer, scheduler, start_epoch, flow_best_loss = build_flow(args, device)
         for epoch in range(start_epoch, start_epoch + args.num_epochs):
             flow.train_full(epoch, flow_net, trainloader, device, optimizer, scheduler,
-                  loss_fn, args.max_grad_norm, global_step)
-            best_loss = flow.test(epoch, flow_net, testloader, device, loss_fn, args.num_samples, best_loss)
+                  loss_fn, args.max_grad_norm)
+            flow_best_loss = flow.test(epoch, flow_net, testloader, device, loss_fn, args.num_samples, flow_best_loss)
 
     elif args.mode == 'ebm':
-        pass
+        ebm_net, optimizer, scheduler, start_epoch, ebm_best_loss = build_ebm(args, device)
+        for epoch in range(start_epoch, start_epoch + args.num_epochs):
+            ebm.train_full(epoch, net, trainloader, device, optimizer, scheduler)
+            ebm_best_loss = ebm.test(epoch, ebm_net, testloader, device, args.num_samples, ebm_best_loss)
     elif args.mode == 'coopNet':
         pass
     
