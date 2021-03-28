@@ -14,7 +14,7 @@ import torchvision
 import torchvision.transforms as transforms
 import util
 
-import models.flow.glow as flow
+import models.flow as flow
 
 def build_flow(args):
     # Model
