@@ -14,8 +14,41 @@ import torchvision
 import torchvision.transforms as transforms
 import util
 
-from models import Glow
-from tqdm import tqdm
+from models.flow import Glow
+
+def build_flow(args):
+    # Model
+    print('Building flow model..')
+    flow = Glow(num_channels=args.num_channels,
+               num_levels=args.num_levels,
+               num_steps=args.num_steps)
+    flow = flow.to(device)
+    if device == 'cuda':
+        flow = torch.nn.DataParallel(net, args.gpu_ids)
+        cudnn.benchmark = args.benchmark
+
+    start_epoch = 0
+    best_loss = 0
+    global_step = 0
+    
+    if args.resume:
+        # Load checkpoint.
+        print('Resuming from checkpoint at ckpts/best.pth.tar...')
+        assert os.path.isdir('ckpts'), 'Error: no checkpoint directory found!'
+        checkpoint = torch.load('ckpts/best.pth.tar')
+        net.load_state_dict(checkpoint['net'])
+        best_loss = checkpoint['test_loss']
+        start_epoch = checkpoint['epoch']
+        global_step = start_epoch * len(trainset)
+
+    loss_fn = util.NLLLoss().to(device)
+    optimizer = optim.Adam(net.parameters(), lr=args.lr)
+    scheduler = sched.LambdaLR(optimizer, lambda s: min(1., s / args.warm_up))
+    
+    return flow, loss_fn, optimizer, scheduler, start_epoch, best_loss, global_step
+
+def build_ebm(args):
+    pass
 
 
 def main(args):
@@ -44,127 +77,21 @@ def main(args):
 
     testset = torchvision.datasets.CIFAR10(root='data', train=False, download=True, transform=transform_test)
     testloader = data.DataLoader(testset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
-
-    # Model
-    print('Building model..')
-    flow = Glow(num_channels=args.num_channels,
-               num_levels=args.num_levels,
-               num_steps=args.num_steps)
-    flow = flow.to(device)
-    if device == 'cuda':
-        net = torch.nn.DataParallel(net, args.gpu_ids)
-        cudnn.benchmark = args.benchmark
-
-    start_epoch = 0
-    if args.resume:
-        # Load checkpoint.
-        print('Resuming from checkpoint at ckpts/best.pth.tar...')
-        assert os.path.isdir('ckpts'), 'Error: no checkpoint directory found!'
-        checkpoint = torch.load('ckpts/best.pth.tar')
-        net.load_state_dict(checkpoint['net'])
-        global best_loss
-        global global_step
-        best_loss = checkpoint['test_loss']
-        start_epoch = checkpoint['epoch']
-        global_step = start_epoch * len(trainset)
-
-    loss_fn = util.NLLLoss().to(device)
-    optimizer = optim.Adam(net.parameters(), lr=args.lr)
-    scheduler = sched.LambdaLR(optimizer, lambda s: min(1., s / args.warm_up))
-
-    for epoch in range(start_epoch, start_epoch + args.num_epochs):
-        train(epoch, net, trainloader, device, optimizer, scheduler,
+    
+    if args.mode == 'flow':
+        flow, loss_fn, optimizer, scheduler, start_epoch, best_loss, global_step = build_flow(args)
+        for epoch in range(start_epoch, start_epoch + args.num_epochs):
+        train(epoch, flow, trainloader, device, optimizer, scheduler,
               loss_fn, args.max_grad_norm)
-        test(epoch, net, testloader, device, loss_fn, args.num_samples)
+        test(epoch, flow, testloader, device, loss_fn, args.num_samples)
 
-
-@torch.enable_grad()
-def train_flow_full(epoch, net, trainloader, device, optimizer, scheduler, loss_fn, max_grad_norm):
-    global global_step
-    print('\nEpoch: %d' % epoch)
-    net.train()
-    loss_meter = util.AverageMeter()
-    with tqdm(total=len(trainloader.dataset)) as progress_bar:
-        for x, _ in trainloader:
-            x = x.to(device)
-            optimizer.zero_grad()
-            z, sldj = net(x, reverse=False)
-            loss = loss_fn(z, sldj)
-            loss_meter.update(loss.item(), x.size(0))
-            loss.backward()
-            if max_grad_norm > 0:
-                util.clip_grad_norm(optimizer, max_grad_norm)
-            optimizer.step()
-            scheduler.step(global_step)
-
-            progress_bar.set_postfix(nll=loss_meter.avg,
-                                     bpd=util.bits_per_dim(x, loss_meter.avg),
-                                     lr=optimizer.param_groups[0]['lr'])
-            progress_bar.update(x.size(0))
-            global_step += x.size(0)
-            
-@torch.enable_grad()
-def train_flow_single_step(net, x, device, optimizer, loss_fn, max_grad_norm):
-    net.train()
-    x = x.to(device)
-    optimizer.zero_grad()
-    z, sldj = net(x, reverse=False)
-    loss = loss_fn(z, sldj)
-    loss_meter.update(loss.item(), x.size(0))
-    loss.backward()
-    if max_grad_norm > 0:
-        util.clip_grad_norm(optimizer, max_grad_norm)
-    optimizer.step()
+    elif args.mode == 'ebm':
+        pass
+    elif args.mode == 'coopNet':
+        pass
     
 
-
-@torch.no_grad()
-def sample(net, batch_size, device):
-    """Sample from RealNVP model.
-    Args:
-        net (torch.nn.DataParallel): The RealNVP model wrapped in DataParallel.
-        batch_size (int): Number of samples to generate.
-        device (torch.device): Device to use.
-    """
-    z = torch.randn((batch_size, 3, 32, 32), dtype=torch.float32, device=device)
-    x, _ = net(z, reverse=True)
-    x = torch.sigmoid(x)
-
-    return x
-
-
-@torch.no_grad()
-def test(epoch, net, testloader, device, loss_fn, num_samples):
-    global best_loss
-    net.eval()
-    loss_meter = util.AverageMeter()
-    with tqdm(total=len(testloader.dataset)) as progress_bar:
-        for x, _ in testloader:
-            x = x.to(device)
-            z, sldj = net(x, reverse=False)
-            loss = loss_fn(z, sldj)
-            loss_meter.update(loss.item(), x.size(0))
-            progress_bar.set_postfix(nll=loss_meter.avg,
-                                     bpd=util.bits_per_dim(x, loss_meter.avg))
-            progress_bar.update(x.size(0))
-
-    # Save checkpoint
-    if loss_meter.avg < best_loss:
-        print('Saving...')
-        state = {
-            'net': net.state_dict(),
-            'test_loss': loss_meter.avg,
-            'epoch': epoch,
-        }
-        os.makedirs('ckpts', exist_ok=True)
-        torch.save(state, 'ckpts/best.pth.tar')
-        best_loss = loss_meter.avg
-
-    # Save samples and data
-    images = sample(net, num_samples, device)
-    os.makedirs('samples', exist_ok=True)
-    images_concat = torchvision.utils.make_grid(images, nrow=int(num_samples ** 0.5), padding=2, pad_value=255)
-    torchvision.utils.save_image(images_concat, 'samples/epoch_{}.png'.format(epoch))
+    
 
 
 if __name__ == '__main__':
@@ -184,11 +111,12 @@ if __name__ == '__main__':
     parser.add_argument('--num_epochs', default=100, type=int, help='Number of epochs to train')
     parser.add_argument('--num_samples', default=64, type=int, help='Number of samples at test time')
     parser.add_argument('--num_workers', default=8, type=int, help='Number of data loader threads')
-    parser.add_argument('--resume', type=str2bool, default=False, help='Resume from checkpoint')
+    parser.add_argument('--resume_flow', type=str2bool, default=False, help='Resume flow from checkpoint')
+    parser.add_argument('--resume_ebm', type=str2bool, default=False, help='Resume ebm from checkpoint')
     parser.add_argument('--seed', type=int, default=0, help='Random seed for reproducibility')
     parser.add_argument('--warm_up', default=500000, type=int, help='Number of steps for lr warm-up')
+    parser.add_argument('mode', choices = ['flow', 'ebm', 'coopNet'])
 
-    best_loss = 0
-    global_step = 0
+    
 
     main(parser.parse_args())
