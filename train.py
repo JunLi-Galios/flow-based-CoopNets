@@ -83,7 +83,7 @@ def main(args):
         for epoch in range(start_epoch, start_epoch + args.num_epochs):
             flow.train_full(epoch, flow_net, trainloader, device, optimizer, scheduler,
                   loss_fn, args.max_grad_norm, global_step)
-            flow.test(epoch, flow_net, testloader, device, loss_fn, args.num_samples)
+            best_loss = flow.test(epoch, flow_net, testloader, device, loss_fn, args.num_samples, best_loss)
 
     elif args.mode == 'ebm':
         pass
