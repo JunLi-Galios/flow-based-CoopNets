@@ -39,7 +39,7 @@ def train_single_step(net, x, device, optimizer):
     optimizer.step()
     
 @torch.no_grad()
-def test(epoch, net, testloader, device, loss_fn, num_samples, best_loss):
+def test(epoch, net, testloader, device, num_samples, best_loss):
     net.eval()
     loss_meter = util.AverageMeter()
     with tqdm(total=len(testloader.dataset)) as progress_bar:
