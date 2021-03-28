@@ -19,12 +19,12 @@ import models.flow.glow as flow
 def build_flow(args):
     # Model
     print('Building flow model..')
-    flow = flow.Glow(num_channels=args.num_channels,
+    flow_net = flow.Glow(num_channels=args.num_channels,
                num_levels=args.num_levels,
                num_steps=args.num_steps)
-    flow = flow.to(device)
+    flow_net = flow_net.to(device)
     if device == 'cuda':
-        flow = torch.nn.DataParallel(net, args.gpu_ids)
+        flow_net = torch.nn.DataParallel(flow_net, args.gpu_ids)
         cudnn.benchmark = args.benchmark
 
     start_epoch = 0
@@ -36,16 +36,16 @@ def build_flow(args):
         print('Resuming from checkpoint at ckpts/best.pth.tar...')
         assert os.path.isdir('ckpts'), 'Error: no checkpoint directory found!'
         checkpoint = torch.load('ckpts/best.pth.tar')
-        net.load_state_dict(checkpoint['net'])
+        flow_net.load_state_dict(checkpoint['net'])
         best_loss = checkpoint['test_loss']
         start_epoch = checkpoint['epoch']
         global_step = start_epoch * len(trainset)
 
     loss_fn = util.NLLLoss().to(device)
-    optimizer = optim.Adam(net.parameters(), lr=args.lr)
+    optimizer = optim.Adam(flow_net.parameters(), lr=args.lr)
     scheduler = sched.LambdaLR(optimizer, lambda s: min(1., s / args.warm_up))
     
-    return flow, loss_fn, optimizer, scheduler, start_epoch, best_loss, global_step
+    return flow_net, loss_fn, optimizer, scheduler, start_epoch, best_loss, global_step
 
 def build_ebm(args):
     pass
@@ -79,11 +79,11 @@ def main(args):
     testloader = data.DataLoader(testset, batch_size=args.batch_size, shuffle=False, num_workers=args.num_workers)
     
     if args.mode == 'flow':
-        flow, loss_fn, optimizer, scheduler, start_epoch, best_loss, global_step = build_flow(args)
+        flow_net, loss_fn, optimizer, scheduler, start_epoch, best_loss, global_step = build_flow(args)
         for epoch in range(start_epoch, start_epoch + args.num_epochs):
-            train(epoch, flow, trainloader, device, optimizer, scheduler,
+            train(epoch, flow_net, trainloader, device, optimizer, scheduler,
                   loss_fn, args.max_grad_norm)
-            test(epoch, flow, testloader, device, loss_fn, args.num_samples)
+            test(epoch, flow_net, testloader, device, loss_fn, args.num_samples)
 
     elif args.mode == 'ebm':
         pass
