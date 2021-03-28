@@ -81,9 +81,9 @@ def main(args):
     if args.mode == 'flow':
         flow_net, loss_fn, optimizer, scheduler, start_epoch, best_loss, global_step = build_flow(args)
         for epoch in range(start_epoch, start_epoch + args.num_epochs):
-            train(epoch, flow_net, trainloader, device, optimizer, scheduler,
+            flow.train(epoch, flow_net, trainloader, device, optimizer, scheduler,
                   loss_fn, args.max_grad_norm)
-            test(epoch, flow_net, testloader, device, loss_fn, args.num_samples)
+            flow.test(epoch, flow_net, testloader, device, loss_fn, args.num_samples)
 
     elif args.mode == 'ebm':
         pass
