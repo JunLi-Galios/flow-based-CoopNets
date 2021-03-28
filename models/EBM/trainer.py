@@ -1,6 +1,7 @@
 import torch
 from tqdm import tqdm
 import util
+from models.EBM.sampler import sample
 
 @torch.enable_grad()
 def train_full(epoch, net, trainloader, device, optimizer, scheduler, global_step, sampler):
