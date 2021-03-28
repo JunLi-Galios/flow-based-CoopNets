@@ -2,9 +2,10 @@ import torch
 from tqdm import tqdm
 import util
 from models.EBM.sampler import sample
+import os
 
 @torch.enable_grad()
-def train_full(epoch, net, trainloader, device, optimizer, scheduler, global_step, sampler):
+def train_full(epoch, net, trainloader, device, optimizer, scheduler, sampler):
     print('\nEpoch: %d' % epoch)
     net.train()
     loss_meter = util.AverageMeter()
@@ -18,13 +19,12 @@ def train_full(epoch, net, trainloader, device, optimizer, scheduler, global_ste
             loss.backward()
  
             optimizer.step()
-            scheduler.step(global_step)
+            scheduler.step()
 
             progress_bar.set_postfix(nll=loss_meter.avg,
                                      bpd=util.bits_per_dim(x, loss_meter.avg),
                                      lr=optimizer.param_groups[0]['lr'])
             progress_bar.update(x.size(0))
-            global_step += x.size(0)
           
 @torch.enable_grad()
 def train_single_step(net, x, device, optimizer, sampler):
@@ -60,12 +60,12 @@ def test(epoch, net, testloader, device, loss_fn, num_samples, best_loss):
             'epoch': epoch,
         }
         os.makedirs('ckpts', exist_ok=True)
-        torch.save(state, 'ckpts/best.pth.tar')
+        torch.save(state, 'ckpts/best_ebm.pth.tar')
         best_loss = loss_meter.avg
 
     # Save samples and data
     images = sample(net, num_samples, device)
-    os.makedirs('samples', exist_ok=True)
+    os.makedirs('ebm_samples', exist_ok=True)
     images_concat = torchvision.utils.make_grid(images, nrow=int(num_samples ** 0.5), padding=2, pad_value=255)
     torchvision.utils.save_image(images_concat, 'samples/epoch_{}.png'.format(epoch))
     
