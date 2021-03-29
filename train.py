@@ -118,7 +118,7 @@ def main(args):
         ebm_net, ebm_optimizer, ebm_scheduler, ebm_start_epoch, ebm_best_loss = build_ebm(args, device)
         
         for epoch in range(ebm_start_epoch, ebm_start_epoch + args.num_epochs):
-            for x, _ in trainloader
+            for x, _ in trainloader:
                 # train flow for single step
                 flow.train_single_step(flow_net, x, device, flow_optimizer, loss_fn, max_grad_norm)
 
