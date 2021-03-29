@@ -131,6 +131,7 @@ def main(args):
                     x_e = ebm.train_single_step(ebm_net, x, device, ebm_optimizer, x_f)
 
                     # train flow with samples from ebm
+                    x_e = (x_e - x.min()) / (x.max() - x.min() + 1e-5)
                     flow.train_single_step(flow_net, x_e, device, flow_optimizer, flow_loss_fn, args.max_grad_norm)
 
                     if flow_scheduler != None:
