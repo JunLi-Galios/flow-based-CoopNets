@@ -1,7 +1,7 @@
 import torch.nn as nn
 
 class F(nn.Module):
-    def __init__(self, n_c=n_ch, n_f = n_f, l= 0.2):
+    def __init__(self, n_c, n_f, l= 0.2):
         super(F, self).__init__()
         self.f = nn.Sequential(
             nn.Conv2d(n_c, n_f, 3, 1, 1),
