@@ -128,20 +128,17 @@ def main(args):
                     x_f = flow.sample(flow_net, args.batch_size, device)
 
                     # train ebm for single step
-                    ebm.train_single_step(ebm_net, x, device, ebm_optimizer, x_f)
-
-                    # sample from ebm
-                    x_e = ebm.sample(ebm_net, p_0=x_f)
+                    x_e = ebm.train_single_step(ebm_net, x, device, ebm_optimizer, x_f)
 
                     # train flow with samples from ebm
-                    flow.train_single_step(flow_net, x, device, flow_optimizer, flow_loss_fn, args.max_grad_norm)
+                    flow.train_single_step(flow_net, x_e, device, flow_optimizer, flow_loss_fn, args.max_grad_norm)
 
                     if flow_scheduler != None:
                         flow_scheduler.step()
                     if ebm_scheduler != None:
                         ebm_scheduler.step()
 
-                ebm_best_loss = ebm.test(epoch, ebm_net, testloader, device, args.num_samples, ebm_best_loss)
+            ebm_best_loss = ebm.test(epoch, ebm_net, testloader, device, args.num_samples, ebm_best_loss)
                 
        
 
