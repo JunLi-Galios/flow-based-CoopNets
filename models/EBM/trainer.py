@@ -28,11 +28,11 @@ def train_full(epoch, net, trainloader, device, optimizer, scheduler):
             progress_bar.update(x.size(0))
           
 @torch.enable_grad()
-def train_single_step(net, x, device, optimizer):
+def train_single_step(net, x, device, optimizer, p_0=None):
     net.train()
     x = x.to(device)
     optimizer.zero_grad()
-    x_q = sample(net, m=64, n_ch=3, im_sz=32, im_sz=32, K=100, device)
+    x_q = sample(net, m=64, n_ch=3, im_sz=32, im_sz=32, K=100, device, p_0)
     loss = net(x_q).mean() - net(x_p_d).mean()
     loss_meter.update(loss.item(), x.size(0))
     loss.backward()
