@@ -118,29 +118,30 @@ def main(args):
         flow_net, flow_loss_fn, flow_optimizer, flow_scheduler, flow_start_epoch, flow_best_loss = build_flow(args, device)
         ebm_net, ebm_optimizer, ebm_scheduler, ebm_start_epoch, ebm_best_loss = build_ebm(args, device)
         
-        for epoch in tqdm(range(ebm_start_epoch, ebm_start_epoch + args.num_epochs)):
-            for x, _ in trainloader:
-                # train flow for single step
-                flow.train_single_step(flow_net, x, device, flow_optimizer, flow_loss_fn, args.max_grad_norm)
+        for epoch in range(ebm_start_epoch, ebm_start_epoch + args.num_epochs):
+            with tqdm(total=len(trainloader.dataset)) as progress_bar:
+                for x, _ in trainloader:
+                    # train flow for single step
+                    flow.train_single_step(flow_net, x, device, flow_optimizer, flow_loss_fn, args.max_grad_norm)
 
-                # sample from flow
-                x_f = flow.sample(flow_net, args.batch_size, device)
+                    # sample from flow
+                    x_f = flow.sample(flow_net, args.batch_size, device)
 
-                # train ebm for single step
-                ebm.train_single_step(ebm_net, x, device, ebm_optimizer, x_f)
+                    # train ebm for single step
+                    ebm.train_single_step(ebm_net, x, device, ebm_optimizer, x_f)
 
-                # sample from ebm
-                x_e = ebm.sample(ebm_net, p_0=x_f)
+                    # sample from ebm
+                    x_e = ebm.sample(ebm_net, p_0=x_f)
 
-                # train flow with samples from ebm
-                flow.train_single_step(flow_net, x, device, flow_optimizer, flow_loss_fn, args.max_grad_norm)
+                    # train flow with samples from ebm
+                    flow.train_single_step(flow_net, x, device, flow_optimizer, flow_loss_fn, args.max_grad_norm)
 
-                if flow_scheduler != None:
-                    flow_scheduler.step()
-                if ebm_scheduler != None:
-                    ebm_scheduler.step()
-                    
-            ebm_best_loss = ebm.test(epoch, ebm_net, testloader, device, args.num_samples, ebm_best_loss)
+                    if flow_scheduler != None:
+                        flow_scheduler.step()
+                    if ebm_scheduler != None:
+                        ebm_scheduler.step()
+
+                ebm_best_loss = ebm.test(epoch, ebm_net, testloader, device, args.num_samples, ebm_best_loss)
                 
        
 
