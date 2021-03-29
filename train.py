@@ -45,7 +45,7 @@ def build_flow(args, device):
     
     return flow_net, loss_fn, optimizer, scheduler, start_epoch, flow_best_loss
 
-def build_ebm(args):
+def build_ebm(args, device):
     
     print('Building ebm model..')
     ebm_net = ebm.Glow(num_channels=args.num_channels,
