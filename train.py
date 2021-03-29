@@ -140,6 +140,8 @@ def main(args):
                         flow_scheduler.step()
                     if ebm_scheduler != None:
                         ebm_scheduler.step()
+                        
+                    progress_bar.update(x.size(0))
 
             ebm_best_loss = ebm.test(epoch, ebm_net, testloader, device, args.num_samples, ebm_best_loss)
                 
