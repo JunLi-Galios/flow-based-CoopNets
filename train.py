@@ -13,6 +13,7 @@ import torch.utils.data as data
 import torchvision
 import torchvision.transforms as transforms
 import util
+from tqdm import tqdm
 
 import models.flow as flow
 import models.EBM as ebm
