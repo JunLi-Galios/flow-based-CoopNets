@@ -15,6 +15,8 @@ import torchvision.transforms as transforms
 import util
 
 import models.flow as flow
+import models.EBM as ebm
+
 
 def build_flow(args, device):
     # Model
@@ -48,9 +50,7 @@ def build_flow(args, device):
 def build_ebm(args, device):
     
     print('Building ebm model..')
-    ebm_net = ebm.Glow(num_channels=args.num_channels,
-               num_levels=args.num_levels,
-               num_steps=args.num_steps)
+    ebm_net = ebm.F(n_c=3, n_f=64)
     ebm_net = ebm_net.to(device)
     if device == 'cuda':
         ebm_net = torch.nn.DataParallel(ebm_net, args.gpu_ids)
