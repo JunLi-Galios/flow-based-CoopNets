@@ -114,11 +114,31 @@ def main(args):
             ebm.train_full(epoch, net, trainloader, device, optimizer, scheduler)
             ebm_best_loss = ebm.test(epoch, ebm_net, testloader, device, args.num_samples, ebm_best_loss)
     elif args.mode == 'coopNet':
-        pass
-    
-
-    
-
+        flow_net, flow_loss_fn, flow_optimizer, flow_scheduler, flow_start_epoch, flow_best_loss = build_flow(args, device)
+        ebm_net, ebm_optimizer, ebm_scheduler, ebm_start_epoch, ebm_best_loss = build_ebm(args, device)
+        
+        for epoch in range(ebm_start_epoch, ebm_start_epoch + args.num_epochs):
+            # train flow for single step
+            flow.train_single_step(flow_net, x, device, flow_optimizer, loss_fn, max_grad_norm)
+            
+            # sample from flow
+            x_f = flow.sample(flow_net, args.batch_size, device)
+            
+            # train ebm for single step
+            ebm.train_single_step(ebm_net, x, device, ebm_optimizer, x_f)
+            
+            # sample from ebm
+            x_e = emb.sample(ebm_net, p_0=x_f)
+            
+            # train flow with samples from ebm
+            flow.train_single_step(flow_net, x, device, flow_optimizer, loss_fn, max_grad_norm)
+            
+            if flow_scheduler != None:
+                flow_scheduler.step()
+            if ebm_scheduler != None:
+                ebm_scheduler.step()
+                
+       
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Glow on CIFAR-10')
