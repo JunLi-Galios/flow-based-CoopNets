@@ -35,7 +35,6 @@ def train_single_step(net, x, device, optimizer, loss_fn, max_grad_norm):
     optimizer.zero_grad()
     z, sldj = net(x, reverse=False)
     loss = loss_fn(z, sldj)
-    loss_meter.update(loss.item(), x.size(0))
     loss.backward()
     if max_grad_norm > 0:
         util.clip_grad_norm(optimizer, max_grad_norm)
