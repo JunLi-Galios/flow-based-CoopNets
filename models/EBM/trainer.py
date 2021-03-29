@@ -37,6 +37,7 @@ def train_single_step(net, x, device, optimizer, p_0=None):
     loss = net(x_q).mean() - net(x).mean()
     loss.backward()
     optimizer.step()
+    return x_q
     
     
 @torch.enable_grad()
