@@ -121,6 +121,8 @@ def main(args):
         for epoch in range(ebm_start_epoch, ebm_start_epoch + args.num_epochs):
             with tqdm(total=len(trainloader.dataset)) as progress_bar:
                 for x, _ in trainloader:
+                    x = x.to(device)
+
                     # train flow for single step
                     flow.train_single_step(flow_net, x, device, flow_optimizer, flow_loss_fn, args.max_grad_norm)
 
