@@ -129,7 +129,7 @@ def main(args):
                 ebm.train_single_step(ebm_net, x, device, ebm_optimizer, x_f)
 
                 # sample from ebm
-                x_e = emb.sample(ebm_net, p_0=x_f)
+                x_e = ebm.sample(ebm_net, p_0=x_f)
 
                 # train flow with samples from ebm
                 flow.train_single_step(flow_net, x, device, flow_optimizer, flow_loss_fn, args.max_grad_norm)
