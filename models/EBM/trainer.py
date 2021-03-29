@@ -14,7 +14,7 @@ def train_full(epoch, net, trainloader, device, optimizer, scheduler):
             x = x.to(device)
             optimizer.zero_grad()
             x_q = sample(net, m=64, n_ch=3, im_w=32, im_h=32, K=100, device=device)
-            loss = net(x_q).mean() - net(x_p_d).mean()
+            loss = net(x_q).mean() - net(x).mean()
             loss_meter.update(loss.item(), x.size(0))
             loss.backward()
  
