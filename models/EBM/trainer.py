@@ -33,10 +33,11 @@ def train_single_step(net, x, device, optimizer, p_0=None):
     x = x.to(device)
     optimizer.zero_grad()
     x_q = sample(net, m=64, n_ch=3, im_w=32, im_h=32, K=100, device=device, p_0=p_0)
-    loss = net(x_q).mean() - net(x_p_d).mean()
+    loss = net(x_q).mean() - net(x).mean()
     loss_meter.update(loss.item(), x.size(0))
     loss.backward()
     optimizer.step()
+    
     
 @torch.enable_grad()
 def test(epoch, net, testloader, device, num_samples, best_loss):
@@ -46,7 +47,7 @@ def test(epoch, net, testloader, device, num_samples, best_loss):
         for x, _ in testloader:
             x = x.to(device)
             x_q = sample(net, m=64, n_ch=3, im_w=32, im_h=32, K=100, device=device)
-            loss = net(x_q).mean() - net(x_p_d).mean()
+            loss = net(x_q).mean() - net(x).mean()
             loss_meter.update(loss.item(), x.size(0))
             progress_bar.set_postfix(nll=loss_meter.avg,
                                      bpd=util.bits_per_dim(x, loss_meter.avg))
