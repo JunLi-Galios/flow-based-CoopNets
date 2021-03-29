@@ -38,7 +38,7 @@ def train_single_step(net, x, device, optimizer, p_0=None):
     loss.backward()
     optimizer.step()
     
-@torch.no_grad()
+@torch.enable_grad()
 def test(epoch, net, testloader, device, num_samples, best_loss):
     net.eval()
     loss_meter = util.AverageMeter()
