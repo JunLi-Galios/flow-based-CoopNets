@@ -117,7 +117,7 @@ def main(args):
         flow_net, flow_loss_fn, flow_optimizer, flow_scheduler, flow_start_epoch, flow_best_loss = build_flow(args, device)
         ebm_net, ebm_optimizer, ebm_scheduler, ebm_start_epoch, ebm_best_loss = build_ebm(args, device)
         
-        for epoch in range(ebm_start_epoch, ebm_start_epoch + args.num_epochs):
+        for epoch in tqdm(range(ebm_start_epoch, ebm_start_epoch + args.num_epochs)):
             for x, _ in trainloader:
                 # train flow for single step
                 flow.train_single_step(flow_net, x, device, flow_optimizer, flow_loss_fn, args.max_grad_norm)
@@ -138,6 +138,8 @@ def main(args):
                     flow_scheduler.step()
                 if ebm_scheduler != None:
                     ebm_scheduler.step()
+                    
+            ebm_best_loss = ebm.test(epoch, ebm_net, testloader, device, args.num_samples, ebm_best_loss)
                 
        
 
