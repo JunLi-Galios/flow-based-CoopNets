@@ -3,6 +3,7 @@ from tqdm import tqdm
 import util
 from models.EBM.sampler import sample
 import os
+import torchvision
 
 @torch.enable_grad()
 def train_full(epoch, net, trainloader, device, optimizer, scheduler):
