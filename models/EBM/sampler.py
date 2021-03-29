@@ -1,6 +1,6 @@
 import torch
 
-@torch.no_grad()
+@torch.enable_grad()
 def sample(net, m=64, n_ch=3, im_w=32, im_h=32, K=100, device='cpu', p_0=None):
     if p_0 == None:
         sample_p_0 = lambda: torch.FloatTensor(m, n_ch, im_w, im_h).uniform_(-1, 1).to(device)
