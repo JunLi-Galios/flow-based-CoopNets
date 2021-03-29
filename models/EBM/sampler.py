@@ -1,7 +1,7 @@
 import torch
 
 @torch.no_grad()
-def sample(net, m=64, n_ch=3, im_sz=32, im_sz=32, K=100, device, p_0=None):
+def sample(net, m=64, n_ch=3, im_sz=32, im_sz=32, K=100, device='cpu', p_0=None):
     if p_0 == None:
         sample_p_0 = lambda: torch.FloatTensor(m, n_ch, im_sz, im_sz).uniform_(-1, 1).to(device)
     else:
