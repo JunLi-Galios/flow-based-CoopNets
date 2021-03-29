@@ -68,7 +68,7 @@ def build_ebm(args, device):
         ebm_best_loss = checkpoint['test_loss']
         start_epoch = checkpoint['epoch']
         
-    optimizer = t.optim.Adam(f.parameters(), lr=1e-4, betas=[.9, .999])    
+    optimizer = torch.optim.Adam(ebm_net.parameters(), lr=1e-4, betas=[.9, .999])    
     scheduler = None
         
     return ebm_net, optimizer, scheduler, start_epoch, ebm_best_loss
@@ -111,7 +111,7 @@ def main(args):
     elif args.mode == 'ebm':
         ebm_net, optimizer, scheduler, start_epoch, ebm_best_loss = build_ebm(args, device)
         for epoch in range(start_epoch, start_epoch + args.num_epochs):
-            ebm.train_full(epoch, net, trainloader, device, optimizer, scheduler)
+            ebm.train_full(epoch, ebm_net, trainloader, device, optimizer, scheduler)
             ebm_best_loss = ebm.test(epoch, ebm_net, testloader, device, args.num_samples, ebm_best_loss)
     elif args.mode == 'coopNet':
         flow_net, flow_loss_fn, flow_optimizer, flow_scheduler, flow_start_epoch, flow_best_loss = build_flow(args, device)
