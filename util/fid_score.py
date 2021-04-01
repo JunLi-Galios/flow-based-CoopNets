@@ -76,7 +76,7 @@ class ImagePathDataset(torch.utils.data.Dataset):
         return img
 
 
-def get_activations(files, model, batch_size=50, dims=2048, device='cpu'):
+def get_activations(dataloader, model, batch_size=50, dims=2048, device='cpu'):
     """Calculates the activations of the pool_3 layer for all images.
     Params:
     -- files       : List of image files paths
@@ -95,19 +95,12 @@ def get_activations(files, model, batch_size=50, dims=2048, device='cpu'):
     """
     model.eval()
 
-    if batch_size > len(files):
+    if batch_size > len(dataloader):
         print(('Warning: batch size is bigger than the data size. '
                'Setting batch size to data size'))
-        batch_size = len(files)
+        batch_size = len(dataloader)
 
-    dataset = ImagePathDataset(files, transforms=TF.ToTensor())
-    dataloader = torch.utils.data.DataLoader(dataset,
-                                             batch_size=batch_size,
-                                             shuffle=False,
-                                             drop_last=False,
-                                             num_workers=cpu_count())
-
-    pred_arr = np.empty((len(files), dims))
+    pred_arr = np.empty((len(dataloader), dims))
 
     start_idx = 0
 
@@ -208,33 +201,23 @@ def calculate_activation_statistics(files, model, batch_size=50, dims=2048,
     return mu, sigma
 
 
-def compute_statistics_of_path(path, model, batch_size, dims, device):
-    if path.endswith('.npz'):
-        with np.load(path) as f:
-            m, s = f['mu'][:], f['sigma'][:]
-    else:
-        path = pathlib.Path(path)
-        files = sorted([file for ext in IMAGE_EXTENSIONS
-                       for file in path.glob('*.{}'.format(ext))])
-        m, s = calculate_activation_statistics(files, model, batch_size,
-                                               dims, device)
+def compute_statistics_of_dataloader(dataloader, model, batch_size, dims, device):
+     m, s = calculate_activation_statistics(dataloader, model, batch_size,
+                                            dims, device)
 
     return m, s
 
 
-def calculate_fid_given_paths(paths, batch_size, device, dims):
+def calculate_fid_given_dataloader(dataloader1, dataloader2, batch_size, device, dims):
     """Calculates the FID of two paths"""
-    for p in paths:
-        if not os.path.exists(p):
-            raise RuntimeError('Invalid path: %s' % p)
 
     block_idx = InceptionV3.BLOCK_INDEX_BY_DIM[dims]
 
     model = InceptionV3([block_idx]).to(device)
 
-    m1, s1 = compute_statistics_of_path(paths[0], model, batch_size,
+    m1, s1 = compute_statistics_of_dataloader(dataloader1, model, batch_size,
                                         dims, device)
-    m2, s2 = compute_statistics_of_path(paths[1], model, batch_size,
+    m2, s2 = compute_statistics_of_dataloader(dataloader1, model, batch_size,
                                         dims, device)
     fid_value = calculate_frechet_distance(m1, s1, m2, s2)
 
@@ -249,7 +232,8 @@ def main():
     else:
         device = torch.device(args.device)
 
-    fid_value = calculate_fid_given_paths(args.path,
+    fid_value = calculate_fid_given_dataloader(dataloader1,
+                                          dataloader2,
                                           args.batch_size,
                                           device,
                                           args.dims)
