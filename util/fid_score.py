@@ -41,7 +41,7 @@ except ImportError:
     def tqdm(x):
         return x
 
-from pytorch_fid.inception import InceptionV3
+from util.inception import InceptionV3
 
 parser = ArgumentParser(formatter_class=ArgumentDefaultsHelpFormatter)
 parser.add_argument('--batch-size', type=int, default=50,
@@ -178,7 +178,7 @@ def calculate_frechet_distance(mu1, sigma1, mu2, sigma2, eps=1e-6):
             + np.trace(sigma2) - 2 * tr_covmean)
 
 
-def calculate_activation_statistics(files, model, batch_size=50, dims=2048,
+def calculate_activation_statistics(dataloader, model, batch_size=50, dims=2048,
                                     device='cpu'):
     """Calculation of the statistics used by the FID.
     Params:
@@ -195,7 +195,7 @@ def calculate_activation_statistics(files, model, batch_size=50, dims=2048,
     -- sigma : The covariance matrix of the activations of the pool_3 layer of
                the inception model.
     """
-    act = get_activations(files, model, batch_size, dims, device)
+    act = get_activations(dataloader, model, batch_size, dims, device)
     mu = np.mean(act, axis=0)
     sigma = np.cov(act, rowvar=False)
     return mu, sigma
@@ -217,7 +217,7 @@ def calculate_fid_given_dataloader(dataloader1, dataloader2, batch_size, device,
 
     m1, s1 = compute_statistics_of_dataloader(dataloader1, model, batch_size,
                                         dims, device)
-    m2, s2 = compute_statistics_of_dataloader(dataloader1, model, batch_size,
+    m2, s2 = compute_statistics_of_dataloader(dataloader2, model, batch_size,
                                         dims, device)
     fid_value = calculate_frechet_distance(m1, s1, m2, s2)
 
